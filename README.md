@@ -1,5 +1,78 @@
-Commit
+# 9/9 (2주차)
 
+# Next.js의 동적 라우팅
+
+- Next.js의 동적 라우팅은 3가지로 구분됩니다.
+- 핵심적인 차이는 **"하위 경로(Depth)를 어디까지 허용할 것인가"**와 **"동적 세그먼트가 없는 기본 경로를 처리할 수 있는가"**에 있습니다.
+
+---
+
+### 1. 일반 동적 라우팅 (Dynamic Segments)
+
+- **디렉토리 구조**: `[slug]`
+- **작동 방식**: 1개의 특정 경로 세그먼트만 동적으로 매칭합니다.
+- **매칭 예시**:
+  - `/posts/abc` → 매칭 성공 (`slug = 'abc'`)
+  - `/posts/123` → 매칭 성공 (`slug = '123'`)
+  - `/posts` → 매칭 실패 (404 에러)
+  - `/posts/abc/def` → 매칭 실패 (하위 경도가 더 있어서 404 에러)
+
+*\* 슬러그(Slug) : 신문이나 잡지 등에서 제목을 쓸 때, 중요한 의미를 포함하는 단어만을 이용해 제목을 작성하는 방법을 말한다.*
+
+
+### [ 최상위 파일 ] Top-level files
+
+- 최상위 파일은 애플리케이션 구성, 종속성 관리, 프록시 실행, 모니터링 도구 통합, 환경 변수 정의에 사용됩니다.
+> **참고:** 다음 파일이 프로젝트 생성과 동시에 모두 생성되는 것은 아닙니다.
+
+| 파일명 | 설명 (한글) | Description (영문) |
+| :--- | :--- | :--- |
+| `next.config.js` | Next.js에 대한 구성 파일 | Configuration file for Next.js |
+| `package.json` | 프로젝트 종속성 및 스크립트 | Project dependencies and scripts |
+| `instrumentation.ts` | OpenTelemetry 및 계측 파일 | OpenTelemetry and Instrumentation file |
+| `proxy.ts` | Next.js 요청 프록시 | Next.js request proxy |
+| `.env` | 환경 변수 | Environment variables |
+| `.env.local` | 로컬 환경 변수 | Local environment variables |
+| `.env.production` | 프로덕션 환경 변수 | Production environment variables |
+| `.env.development` | 개발 환경 변수 | Development environment variables |
+| `.eslintrc.json` | ESLint에 대한 구성 파일 | Configuration file for ESLint |
+| `.gitignore` | 무시할 Git 파일 및 폴더 | Git files and folders to ignore |
+| `next-env.d.ts` | Next.js에 대한 TypeScript 선언 파일 | TypeScript declaration file for Next.js |
+| `tsconfig.json` | TypeScript용 구성 파일 | Configuration file for TypeScript |
+| `jsconfig.json` | JavaScript용 구성 파일 | Configuration file for JavaScript |
+
+### .eslintrc.json vs eslint.config.mjs
+
+- **JSON**은 주석, 변수, 조건문 등을 쓸 수 없기 때문에 복잡한 설정이 어렵습니다.  
+(JavaScript Object Notation)
+- **mjs**는 ESLint가 새롭게 도입한 방식으로, ESM(ECMAScript 모듈) 형식입니다.
+- 확장자 `.mjs`는 "module JavaScript"를 의미합니다.
+- **ESLint v9 이상**에서 공식 권장 방식입니다.
+- 조건문, 변수, 동적 로딩 등 코드처럼 유연한 설정이 가능합니다.
+- 다른 설정 파일을 `import` 해서 재사용을 할 수 있습니다.
+- 프로젝트 규모가 커질수록 유지보수에 유리합니다.
+
+| 항목 | `.eslintrc.json` | `eslint.config.mjs` |
+| :--- | :--- | :--- |
+| **포맷** | JSON 형식 | JavaScript 모듈 (ESM) |
+| **실행 방식** | 정적인 설정 파일 | 동적인 설정도 가능 (함수, 변수 사용 등) |
+| **호환성** | 구버전 ESLint와 호환 | ESLint v9부터 공식 권장 |
+| **특징** | 간단하고 직관적 | 더 유연하고 모듈화 가능 |
+| **사용 여부** | 여전히 사용 가능 | 최신 Next.js에서 기본값 |
+
+### 오류 처리
+- 문서의 지시 대로만 처리하면 오류가 발생
+- 타입스크립트 환경이 아니기 때문
+- 타입스크립트 환경에서 react와 react-dom을 사요알 수 있도록 타입 정의를 제공하는 패키지를 설치해야 한다.
+
+### 1. Folder and file conventions (폴더 및 파일 규칙)
+
+| 구분 | 일반 설치<br>`pnpm add <pkg>` | 개발용 설치<br>`pnpm add -D <pkg>` |
+| :--- | :--- | :--- |
+| **등록 위치** | `package.json` **➔** `dependencies` | `package.json` **➔** `devDependencies` |
+| **용도** | 실제 서비스 구동에 **반드시 필요한** 패키지 | 코드 빌드, 테스트, 린팅 등 **개발 중에만** 필요한 패키지 |
+| **배포 환경** | 빌드 결과물에 포함되거나 프로덕션 서버에 설치 | `--production` 옵션 등으로 빌드/배포 시 제외 |
+| **대표 예시** | `React`, `Vue`, `Express`, `Axios`, `Lodash` 등 | `TypeScript`, `ESLint`, `Prettier`, `Vite`, `Jest` 등 |
 # 9/2 (1주차)
 
 ## Getting Started (Docs의 개요)
