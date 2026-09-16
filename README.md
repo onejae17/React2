@@ -1,3 +1,39 @@
+# 9/16 (3주차)
+
+## Opting for loading skeletons a specific route
+~~~tsx
+export default function Loading() {
+    return (
+        <div>
+            Loading...
+        </div>
+    )
+}
+---------------------------
+export default async function BlogPage() {
+    await new Promise((resolve) => setTimeout(resolve, 3000)); // 유용하게 자주 쓰임
+    return (
+        <div>
+            Blog 페이지
+        </div>
+    )
+}
+~~~
+
+
+## Organizing your project(프로젝트 구성하기)
+- UI 로직과 라우팅 로직을 분리
+- 프로젝트와 Next.js 생태계 전반에서 내부 파일을 일관되게 구성
+- 코드 편집기에서 파일을 정렬하고 그룹화
+- 향후 Next.js 파일 규칙과 관련된 잠재적인 이름 충돌을 방지
+
+## Folder and file conventions(폴더 및 파일 규칙)
+**[병렬 및 가로채기 라우팅]**
+- 이러한 기능은 슬롯 기반 레이아웃이나 모달 라우팅과 같은 특정 UI 패턴에 적합하다
+## Open Graph Protocol
+- 웹사이트타 페이스북, 카카오톡 등에 링크를 전달할 때 '미리보기'를 생성하는 프로토콜
+- 페이스북이 주도하는 표준화 규칙으로 대부분 sns 플랫폼에서 사용됨
+
 # 9/9 (2주차)
 
 # Next.js의 동적 라우팅
