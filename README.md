@@ -1,4 +1,82 @@
-# 9/16 (3주차)
+# 9/23 (4주차) 202230137 최원재
+## Link Component 기본 사용법
+- Link는 HTML a 요소를 확장하여 프레페칭(prefetching)과 라우트 간 클라이언트 사이드 내비게이션 기능을 제공하는 React 컴포넌트
+- Next.js에서 라우트 간 이동을 위해 주로 사용되는 방법
+
+### 1.href (required)
+- 이동할 경로 또는 URL을 prop으로 전달
+~~~tsx
+import Link from 'next/link'
+ 
+// Navigate to /about?name=test
+export default function Page() {
+  return (
+    <Link
+      href={{
+        pathname: '/about',
+        query: { name: 'test' },
+      }}
+    >
+      About
+    </Link>
+  )
+}
+~~~
+
+### 2. Creation a layout(레이아웃 만들기)
+- index 페이지를 자식으로 허용하는 레이아웃을 만들려면 app디렉토리에 layout 파일을 추가
+- Rootlayout component는 반드시 있어야함, subpage의 layout은 없어도 상관 없음
+ 
+
+### 3. Creating a nested route (중첩 라우트 만들기)
+
+* 중첩 라우트는 다중 URL 세그먼트로 구성된 라우트입니다.
+* 예를 들어, `/blog/[slug]` 경로는 세 개의 세그먼트로 구성됩니다.
+  * `/` (Root Segment)
+  * `blog` (Segment)
+  * `[slug]` (Leaf Segment)
+
+### [ Next.js에서 ]
+
+* 폴더는 URL 세그먼트에 매핑되는 경로 세그먼트를 정의하는 데 사용됩니다.
+  > **# 즉, 폴더가 URL 세그먼트가 된다는 의미입니다.**
+
+* 파일(예: `page` 및 `layout`)은 세그먼트에 표시되는 UI를 만드는 데 사용됩니다.
+* 폴더를 중첩하면 중첩된 라우트를 만들 수 있습니다.
+
+---
+
+> **# URL Segment란**  
+> URL에서 특정 리소스에 대한 경로를 구성하는 부분을 의미
+
+### 문서의 코드를 복사하면 오류가 나옵니다.
+
+- @/lib/posts와 @/ui/post를 작성하지 않았기 때문에 오류가 발생
+
+- 문서에서 별도의 library를 사용한 것은 blog폴더 하나에는 하나의 URL 세그먼트만 존재하지만, 많은 양의 post를 각기 다른 주소로 호출하기 위한 동적 라우팅인 [slug]를 설명하기 위해서
+
+### [slug]의 이해
+
+- slug는 사이트의 특정 페이지를 쉽게 읽을 수 있는 형태로 식별하는 URL의 일부
+- 신문이나 잡지 등에서 핵심 의미를 포함하는 단어만을 조합해 간단 명료하게 제목을 작성하는 것을 슬러그라고 하는 것에서 유래
+- 문사의 경로 /blog/[slug]의 [slug] 부분은 불러올 데이터의 key를 말함
+
+### Rendering with search params(검색 매개변수를 사용한 렌더링)
+
+- 페이지에 대한 데이터를 로드하기 위해 검색 매개변수가 필요한 경우(예: 페이지 매김, 데이터베이스에서 필터링) `searchParams` prop을 사용
+- 검색 매개변수가 클라이언트에서만 사용되는 경우(예: props를 통해 이미 로딩된 목록을 필터링하는 경우) `useSearchParams`를 사용
+- 콜백 이나 이벤트 핸들러에서 `new URLSearchParams(window.location.search)`를 사용하여 리렌더링을 하지 않고도 검색 매개변수를 읽어올 수 있다
+
+---
+
+>앞에서 살펴본 params와 searchParams의 차이는 다음과 같다
+
+>>params는 동적 세그먼트 [slug]에서 가져오는 값으로 URL의 path 부분에 포함된 데이터를 의미합니다
+
+>>searchParams는 query string에서 가져오는 값으로 URL의 ? 이후에 붙는 key=value 데이터를 의미합니다.
+
+
+# 9/16 (3주차) 202230137 최원재
 
 ## Opting for loading skeletons a specific route
 ~~~tsx
