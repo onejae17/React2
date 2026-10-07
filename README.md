@@ -1,3 +1,109 @@
+# 10/7 (6주차) 202230137 최원재
+
+### await이 없어도 async를 붙여 두는 이유
+
+- Next.js 13+의 App Router에서 `page.tsx` 같은 Server Component는 비동기 렌더링을 전제로 하고 있습니다.
+
+- 즉, `page.tsx` 안에서 데이터를 fetch하는 경우가 많기 때문에 `async`를 기본으로 붙여도 전혀 문제가 없습니다.
+
+1. **일관성 유지**: 같은 프로젝트 안에서 어떤 페이지는 `async`, 어떤 페이지는 일반 `function`이면 혼란스러울 수 있습니다.
+   $\rightarrow$ Next.js 공식 문서도 대부분 `async function`으로 예시를 작성합니다.
+
+2. **확장성**: 지금은 더미 데이터(`posts.find(...)`)를 쓰지만, 나중에 DB나 API에서 데이터를 가져올 때 `await fetch(...)` 같은 코드가 들어갈 수 있기 때문에, 미리 `async`를 붙여 두면 수정할 필요가 없습니다.
+
+3. **React Server Component 호환성**: Server Component는 Promise를 반환할 수 있어야 하고, Next.js는 내부적으로 `async` 함수 패턴에 맞춰 최적화된 렌더링 파이프라인을 갖고 있어서 `async`가 붙어 있어도 불필요한 오버헤드가 거의 없습니다.
+
+### generateStaticParams가 없는 경우와 있는 경우 비교
+
+- `generateStaticParams`가 **없는 경우** Next.js는 slug 값을 빌드 타임에는 모르는 상태입니다.
+  $\rightarrow$ 따라서 slug 페이지에 접속하면 Next.js가 서버에서 요청할 때마다 해당 페이지를 동적으로 렌더링하며, 빌드의 결과물로 HTML 파일은 생성되지 않습니다.
+
+- `generateStaticParams`가 **있는 경우** Next.js에 빌드 타임에 생성할 slug 목록을 알려줄 수 있습니다.
+  $\rightarrow$ 이 경우에는 지정한 slug에 대해서는 정적 HTML + JSON이 빌드 타임에 생성되어, 최초 접근 시 SSR이 필요 없이 미리 만들어진 페이지 제공합니다.
+
+| 항목 | generateStaticParams 없음 | generateStaticParams 있음 |
+| :--- | :--- | :--- |
+| **페이지 생성 시점** | 요청 시 서버에서 생성 (SSR/ISR) | 빌드 타임에 생성 (SSG) |
+| **초기 로딩 속도** | 서버 렌더링 필요 $\rightarrow$ 상대적으로 느림 | 정적 HTML 제공 $\rightarrow$ 매우 빠름 |
+| **SEO** | 가능하긴 함, 하지만 요청 시 생성 | 매우 유리 (검색엔진 즉시 HTML 크롤링 가능) |
+| **유연성** | slug를 무한정 지원 가능 (DB 조회 등) | slug를 미리 알아야 함 (동적 slug는 제한적) |
+
+### 2-3. 느린 네트워크
+
+- 네트워크 속도가 저하되거나 연결이 불안정할 때, 링크를 클릭하기 전에 프리페칭 과정이 미처 끝나지 못하는 상황이 발생할 수 있습니다.
+- 이러한 현상은 정적 경로와 동적 경로 모두에서 일어날 수 있습니다.
+- 이때 `loading.tsx` 파일 역시 미리 로드되지 못해 화면에 바로 나타나지 않을 가능성이 있습니다.
+- 체감 성능 향상을 위해 `useLinkStatus` 훅을 활용하여 페이지 이동 도중 스피너나 텍스트 글리머 같은 시각적 요소를 즉시 제공할 수 있습니다.
+
+~~~tsx
+// app/ui/loading-indicator.tsx
+'use client'
+
+import { useLinkStatus } from 'next/link'
+
+export default function LoadingIndicator() {
+  const { pending } = useLinkStatus()
+  return pending ? (
+    <div role="status" aria-label="Loading" className="spinner" />
+  ) : null
+}
+~~~
+
+- 초기 애니메이션 지연(예: 100ms)을 추가하고, 애니메이션을 보이지 않게(예: `opacity: 0`) 시작하면 로딩 표시기를 "디바운스"할 수 있습니다.
+- 즉, 로딩 표시기는 내비게이션이 지정된 지연 시간보다 오래 걸리는 경우에만 표시됩니다.
+
+~~~css
+.spinner {
+  /* ... */
+  opacity: 0;
+  animation:
+    fadeIn 500ms 100ms forwards,
+    rotate 1s linear infinite;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes rotate {
+  to {
+    transform: rotate(360deg);
+  }
+}
+~~~
+
+### 2-4. 프리페칭 비활성화
+
+- `<Link>` 컴포넌트에서 `prefetch` prop을 `false`로 설정하여 프리페치를 사용하지 않도록 선택할 수 있습니다.
+- 이는 대량의 링크 목록(예: 무한 스크롤 테이블)을 렌더링할 때 불필요한 리소스 사용을 방지하는 데 유용합니다.
+
+~~~tsx
+<Link href="/blog" prefetch="{false}">
+  Blog
+</Link>
+~~~
+
+### Hydration이란 무엇인가?
+
+- Hydration이란 서버에서 생성된 HTML에 JavaScript 로직을 추가하여 동적으로 상호작용이 가능하도록 만드는 과정을 의미합니다.
+
+- 특히, React, Vue 등 프론트엔드 라이브러리나 프레임워크에서 많이 사용되는 용어로, 서버 사이드 렌더링(SSR)으로 생성된 정적인 HTML에 클라이언트 측에서 JavaScript를 통해 이벤트 리스너, 상태 관리 등을 주입하여 인터랙티브한 웹 페이지로 변환하는 과정을 말합니다.
+
+#### SSR과 Hydration
+
+- SSR은 서버에서 미리 HTML을 생성하여 사용자에게 전달하는 방식입니다.
+
+- 초기 로딩 속도가 빠르다는 장점이 있지만, 서버에서 생성된 HTML은 정적인 상태이므로 JavaScript 코드를 통해 동적인 상호작용을 구현하려면 추가적인 작업이 필요합니다.
+
+#### Hydration의 역할
+
+- Hydration은 SSR로 생성된 정적인 HTML에 클라이언트 측 JavaScript를 연결하여, 페이지가 로드된 후에도 사용자와의 상호작용이 가능하도록 만듭니다.
+
 # 9/30 (5주차) 202230137 최원재
 ## Route 방식 비교
 
