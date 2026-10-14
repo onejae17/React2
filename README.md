@@ -1,3 +1,91 @@
+# 10/14 (7주차) 202230137 최원재
+
+## 1. server 및 client component를 언제 사용해야 하나요?
+
+* client 환경과 server 환경은 서로 다른 기능을 가지고 있습니다.
+* server 및 client component를 사용하면 사용하는 사례에 따라 각각의 환경에서 필요한 로직을 실행할 수 있습니다.
+* 다음과 같은 항목이 필요할 경우에는 **client component**를 사용합니다.
+  * state 및 event handler. 예) `onClick`, `onChange`
+  * Lifecycle logic. 예) `useEffect`
+  * 브라우저 전용 API. 예) `localStorage`, `window`, `Navigator.geolocation` 등
+  * 사용자 정의 Hook
+* 다음과 같은 항목이 필요할 경우에는 **server component**를 사용합니다.
+  * 서버의 데이터베이스 혹은 API에서 data를 가져오는 경우 사용합니다.
+  * API key, token 및 기타 보안 데이터를 client에 노출하지 않고 사용합니다.
+  * 브라우저로 전송되는 JavaScript의 양을 줄이고 싶을 때 사용합니다.
+  * 콘텐츠가 포함된 첫 번째 페인트(First Contentful Paint-FCP)를 개선하고, 콘텐츠를 client에 점진적으로 스트리밍합니다.
+
+## [ Optimistic Update (낙관적 업데이트) ]
+
+* 사용자에 의해서 이벤트(예: 좋아요 버튼 클릭)가 발생 하면, 서버 응답을 기다리지 않고 클라이언트(브라우저)의 UI를 즉시 변경(업데이트)합니다.
+* 서버에 보낸 요청의 성공을 낙관(optimistic)한다고 가정해서 먼저 화면에 변화를 보여줍니다.
+* 서버에서 응답이 없으면, UI를 원래 상태로 되돌립니다(rollback).
+* 네트워크 지연 동안에도 앱이 "빠르게 반응"하도록 느끼게 하는 것이 목적입니다.
+
+### (장점)
+* 서버 응답 속도와 관계없이 즉각적인 피드백을 제공하여 사용자 경험을 향상시킵니다.
+* 네트워크 상태가 나쁘거나 응답 시간이 길어도 사용자에게 체감되는 속도가 빠릅니다.
+
+### (단점)
+* 서버에서 오류가 발생하면, 사용자에게는 잠시 동안 잘못된 정보가 표시될 수 있습니다.
+* 오류 발생 시 복구 로직이 필요합니다.
+
+## RSC(RSC Payload)는 JSON인가, 바이너리인가?
+
+### 과거 : JSON 기반
+* RSC 초기에는 JSON 형식의 문자열로 데이터를 전달했습니다.
+* 예: `{ type: "component", props: { title: "Hello" } }`
+
+### 현재: 바이너리 형식으로 최적화
+* 최신 React, 특히 Next.js App Router는 RSC payload를 compact binary format으로 전송합니다.
+* JSON이 아니라, React 전용 이진 포맷으로 스트림(stream)을 통해 전달됩니다.
+* 이 방식은 JSON보다 용량이 작고, 빠르게 파싱할 수 있습니다.
+
+## 2. Next.js에서 server와 client component는 어떻게 작동합니까?
+
+### 2-2. client component의 작동(첫 번째 load)
+
+1. HTML은 사용자에게 경로(라우팅 페이지)의 비대화형(정적) 미리보기를 즉시 보여주는 데 사용됩니다.
+2. RSC 페이로드는 client와 server component 트리를 조정하는 데 사용됩니다.
+3. JavaScript는 client component를 hydration하고, 애플리케이션을 대화형으로 만드는 데 사용됩니다.
+
+### Hydration이란 무엇인가?
+
+* Hydration은 이벤트 핸들러를 DOM에 연결하여 정적 HTML을 인터랙티브하게 만드는 React의 프로세스입니다.
+
+### 2-3. 후속 네비게이션
+
+후속 탐색을 할 때 :
+
+* RSC 페이로드는 즉시 탐색할 수 있도록 prefetch 및 cache됩니다
+* client component는 server에서 렌더링된 HTML 없이 전적으로 client에서 렌더링됩니다
+
+## 3. Example
+
+### 3-1. client component 사용
+
+* 파일의 맨 위, 즉 import문 위에 `"use client"` 지시문을 추가하여 client component를 생성할 수 있습니다.
+* `"use client"`는 server와 client 모듈 트리 사이의 경계를 선언하는 데 사용됩니다.
+* 파일에 `"use client"`로 표시되면 해당 파일의 모든 import와 자식 component는 client 번들의 일부로 간주됩니다.
+* 즉, client를 대상으로 하는 모든 component에 이 지시문을 추가할 필요가 없습니다.
+
+~~~tsx
+'use client'
+
+import { useState } from 'react'
+
+export default function Counter() {
+  const [count, setCount] = useState(0)
+
+  return (
+    <div>
+      <p>{count} likes</p>
+      <button onClick={() => setCount(count + 1)}>Click me</button>
+    </div>
+  )
+}
+~~~
+
 # 10/7 (6주차) 202230137 최원재
 
 ### await이 없어도 async를 붙여 두는 이유
