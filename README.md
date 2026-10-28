@@ -1,3 +1,74 @@
+# 10/28 (9주차) 202230137 최원재
+
+## 3-2. JS bundle 크기 줄이기
+
+- client JavaScript 번들의 크기를 줄이려면 UI의 큰 부분을 client component로 표시하는 대신 특정 대화형 component에 "use client"를 추가합니다.
+
+- `<Search />`는 대화형이기 때문에 client component가 되어야 하지만, 나머지 layout은 server component로 유지될 수 있습니다.
+
+**# 나머지 layout은 server component로 유지해야 합니다!**
+
+### client component 사용 실습
+~~~tsx
+// Counter.tsx
+'use client'
+
+import { useState } from 'react'
+
+export default function Counter() {
+  const [count, setCount] = useState(0)
+
+  return (
+    <div>
+      <p>{count} likes</p>
+      <button onClick={() => setCount(count + 1)}>Click me</button>
+    </div>
+  )
+}
+------------------------------------------------
+//counter/page.tsx
+import Counter from '@/components/Counter'
+
+export default function CounterPage() {
+    return(
+        <div>
+            <h1>Counter Page</h1>
+            <Counter />
+        </div>
+    )
+}
+------------------------------------------------
+//ui/LikeButton.tsx
+'use client'
+
+import { useState } from 'react'
+export default function LikeButton({ likes }: { likes: number }) {
+  // Optimistic Updates(낙관적 업데이트)
+  // 클라이언트 전용 컴포넌트 - 초기 likes 값을 받아 로컬에서 즉시 반영
+  // 서버에 저장하지 않고, 단순히 UI 상에서 좋아요 수를 증가시키는 역할
+  const [count, setCount] = useState<number>(likes ?? 0)
+  const [isLiking, setIsLiking] = useState(false)
+
+  const handleClick = async () => {
+    // 낙관적 업데이트
+    setIsLiking(true)
+    setCount((c) => c + 1)
+
+    // 실제 저장 로직(API 호출 등)이 있다면 이곳에서 호출할 수 있습니다.
+    // 예: await fetch('/api/like', { method: 'POST', body: JSON.stringify({ ... }) })
+
+    // 예제에서는 짧은 지연 후 버튼 상태만 해제합니다.
+    setTimeout(() => setIsLiking(false), 300)
+  }
+
+  return (
+    <button onClick={handleClick} disabled={isLiking} aria-pressed={isLiking}>
+      👍 {count}
+    </button>
+  )
+}
+~~~
+
 # 10/14 (7주차) 202230137 최원재
 
 ## 1. server 및 client component를 언제 사용해야 하나요?
