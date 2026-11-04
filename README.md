@@ -1,3 +1,143 @@
+# 11/4 (10주차) 202230137 최원재
+
+## server에서 client component로 데이터 전달
+**알아두면 좋은 정보** : client component에 전달되는 Props는 React로 직렬화가 가능해야 합니다.
+
+### 직렬화(serialization)란 무엇인가?
+
+* 일반적으로는 메모리에 있는 복잡한 데이터를 바이트의 연속 형태로 변환하는 과정을 말합니다.
+
+* 즉, 자바스크립트의 객체나 배열처럼 구조가 있는 데이터를 파일로 저장하거나, 네트워크로 전송하기 쉽게 만드는 과정입니다.
+
+* React나 Next.js 같은 프레임워크는 컴포넌트의 상태나 트리 구조를 서버에서 직렬화하여 클라이언트로 전송하고, 클라이언트에서 역직렬화 하는 과정을 자주 수행합니다.
+
+## server 및 client component 인터리빙
+
+* 인터리빙(Interleaving)은 여러 데이터 블록이나 비트를 섞어서 전송하거나 처리하여 오류 발생 시 영향을 최소화하는 기술입니다
+
+* 특히 데이터 통신에서 버스트 오류(연속적인 오류)를 줄이고 오류 정정 코드를 효과적으로 사용하기 위해 사용됩니다
+
+* 문서에서는 server 컴포넌트와 client 컴포넌트가 섞여서(interleaved) 동작할 때 자주 등장하는 패턴입니다
+
+  * server component의 prop를 client component에 전달할 수 있습니다
+  * 이를 통해 client component 내에서 server에서 렌더링된 UI를 시각적으로 중첩할 수 있습니다
+  * `<ClientComponent>`에 공간(slot)을 만들고 children을 끼워넣는 패턴이 일반적입니다.
+
+## server 및 client compoenent interleaving 실습
+
+~~~tsx
+// components/ClientLayout.tsx (Client Component)
+'use client';
+
+export default function ClientLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="layout">
+      <h1>클라이언트 레이아웃</h1>
+      <div className="content">
+        {children} {/* <-- 이 부분이 "slot" */}
+      </div>
+    </div>
+  );
+}
+==================================================
+// @/components/ServerContent.tsx (Server Component)
+
+export default async function ServerContent() {
+  const data = await fetch('https://jsonplaceholder.typicode.com/posts/1').then(r => r.json());
+  return (
+    <p>서버에서 가져온 제목: {data.title}</p>
+  );
+}
+==================================================
+// interleaved/page.tsx (Server Component)
+
+import ClientLayout from '@/components/ClientLayout';
+import ServerContent from '@/components/ServerContent';
+
+export default function Page() {
+  return (
+    <ClientLayout>
+      <ServerContent />
+    </ClientLayout>
+  );
+}
+~~~
+
+### 3-2. JS 번들 크기 줄이기
+* `<Search />`는 사용과의 상호작용이 바로 이루어질 가능성이 있기 때문에 Client Component로 사용하고, `<Logo />`는 상대적으로 중요하지 않고 이미지 등 용량이 크기 때문에 Server Component로 사용하는 것이 좋습니다.
+
+## Context란 무엇인가?
+
+* 다음 절은 3-5. Context provider 입니다.
+
+* Next.js에서 Context는 React의 Context API를 사용하여 컴포넌트 사이에 데이터를 공유하는 메커니즘을 의미합니다.
+
+* 즉, 부모 컴포넌트에서 자식 컴포넌트로 직접 props를 전달하지 않고도, 특정 데이터를 필요한 컴포넌트에서 쉽게 접근하고 사용할 수 있도록 도와줍니다.
+
+### [ Context의 주요 특징 ]
+
+* **전역 상태 관리**
+  - Context를 사용하면 애플리케이션 전체에서 공유해야 하는 데이터를 중앙 집중적으로 관리할 수 있습니다. (예: 사용자 정보, 테마 설정 등)
+
+* **props drilling 문제 해결**
+  - 컴포넌트 트리가 깊어질수록 props를 계속 전달해야 하는 번거로움을 줄여줍니다.
+  - Context를 사용하면 필요한 컴포넌트에서 바로 데이터를 가져올 수 있으므로, 코드의 가독성을 높이고 유지 보수를 용이하게 합니다.
+
+* **React 컴포넌트에서 사용**
+  - Context는 React에서 제공하는 기능이기 때문에, Next.js에서도 React 컴포넌트를 사용하여 구현합니다.
+
+## Context Provider 실습
+~~~tsx
+'use client'
+
+import { createContext, useEffect, useState } from 'react'
+
+export const ThemeContext = createContext<{
+  theme: 'light' | 'dark'
+  toggleTheme: () => void
+}>({
+  theme: 'light',
+  toggleTheme: () => {},
+})
+
+export default function ThemeProvider({
+  children,
+}: {
+  children: React.ReactNode
+}) {
+  const [theme, setTheme] = useState<'light' | 'dark'>('light')
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      document.documentElement.dataset.theme = theme
+    }
+  }, [theme])
+
+  const toggleTheme = () => { setTheme((t) => (t === 'dark' ? 'light' : 'dark')) }
+  return (
+    <ThemeContext.Provider value={{ theme, toggleTheme }}>
+      {children}
+    </ThemeContext.Provider>
+  )
+}
+==================================================
+'use client'
+
+import { useContext } from 'react'
+import { ThemeContext } from './themeprovider'
+
+export default function ThemeStatus() {
+  const { theme, toggleTheme } = useContext(ThemeContext)
+  return (
+    <div style={{ display: 'inline-block', marginLeft: 12 }}>
+      <button onClick={toggleTheme} aria-label="toggle theme">
+        Theme: {theme === 'dark' ? '🌙 Dark' : '☀️ Light'}
+      </button>
+    </div>
+  )
+}
+~~~
+
 # 10/28 (9주차) 202230137 최원재
 
 ## 3-2. JS bundle 크기 줄이기
