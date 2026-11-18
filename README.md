@@ -1,3 +1,147 @@
+# 11/18 (12주차) 202230137 최원재
+
+## 외부(서드 파티) component
+
+* client 전용 기능에 의존하는 외부 component를 사용하는 경우, 해당 component를 client component에 래핑하여 예상대로 작동하는지 확인할 수 있습니다.
+* 예를 들어, `<Carousel />`은 acme-carousel 패키지에서 가져올 수 있습니다.
+* 이 component는 `useState`를 사용하지만 “use client” 지시문은 없습니다.
+* client component 내에서 `<Carousel />`을 사용하면 예상대로 작동합니다.
+* server component 내에서 직접 사용하려고 하면 오류가 발생합니다.
+* 이는 Next.js가 `<Carousel />`이 client 전용 기능을 사용하고 있다는 것을 알지 못하기 때문입니다.
+* 이 문제를 해결하려면 client 전용 기능에 의존하는 외부 component를 자체 client component로 래핑할 수 있습니다.
+* 이제 server component 내에서 `<Carousel />`을 직접 사용할 수 있습니다.
+* component 라이브러리를 빌드하는 경우, client 전용 기능에 의존하는 진입점에 `"use client"` 지시문을 추가합니다.
+* 이렇게 하면 사용자가 래퍼를 만들 필요 없이 component를 server component로 가져올 수 있습니다.
+
+* 일부 번들러는 “use client” 지시어를 제거할 수 있습니다.
+
+* React Wrap Balancer 및 Vercel Analytics 저장소에서 “use client” 지시어를 포함하도록 esbuild를 구성하는 방법의 예를 확인할 수 있습니다.
+
+## 환경 변수 노출 예방
+
+* 해당 `client-only`(클라이언트 전용) 패키지는 클라이언트 전용 로직이 포함된 모듈을 표시하는 데 사용할 수 있습니다. (예 `window` 객체에 액세스하는 코드)
+* Next.js에서 `server-only` 또는 `client-only`를 설치하는 것은 선택 사항입니다.
+* 그러나 lint 규칙에서 불필요한 종속성을 표시하는 경우, 문제를 방지하기 위해 해당 종속성을 설치할 수 있습니다.
+
+```bash
+npm install server-only
+```
+## Fetching Data (데이터 가져오기) 서버 컴포넌트
+
+### 서버 컴포넌트
+
+* 서버 컴포넌트에서 데이터를 fetch하는 방법은 두 가지가 있습니다.
+  1. fetch API
+  2. ORM 또는 데이터베이스
+
+**[ fetch API 사용 ]**
+
+* 데이터를 가져오려면 fetch API를 사용하여 컴포넌트를 비동기식 함수로 변환하고 다음 fetch의 호출을 기다립니다. 예를 들어:
+
+```tsx
+// app/blog/page.tsx
+export default async function Page() {
+  const data = await fetch('[https://api.vercel.app/blog](https://api.vercel.app/blog)')
+  const posts = await data.json()
+  return (
+    <ul>
+      {posts.map((post) => (
+        <li key={post.id}>{post.title}</li>
+      ))}
+    </ul>
+  )
+}
+```
+## 1. 데이터 가져오기(Fetching Data)
+
+**[ 2. ORM 또는 데이터베이스를 사용 ]**
+
+* 서버 컴포넌트는 서버에서 렌더링 되기 때문에 ORM이나 데이터베이스 클라이언트를 사용해서 안전하게 데이터베이스 쿼리를 실행할 수 있습니다.
+* 컴포넌트를 비동기 함수로 변환하고 호출을 기다리면 됩니다.
+
+```tsx
+// app/blog/page.tsx
+import { db, posts } from '@/lib/db'
+
+export default async function Page() {
+  const allPosts = await db.select().from(posts)
+  return (
+    <ul>
+      {allPosts.map((post) => (
+        <li key={post.id}>{post.title}</li>
+      ))}
+    </ul>
+  )
+}
+```
+# 11/11 (11주차) 202230137 최원재
+
+## Context provider 실습 코드 설명
+
+- 다음 파일 내부에서 ThemeProvider 컴포넌트를 정의합니다. line13 ~
+
+- useState로 theme 상태를 관리합니다. line18
+: line6에서도 나왔던 <'light' | 'dark'>은 TypeScript의 "유니온 타입(Union Type)"이며, 초기값은 light라는 것을 의미 합니다.
+
+```typescript
+const [theme, setTheme] = useState<'light' | 'dark'>('light')
+```
+
+- 다음은 useEffect Hook을 사용해서 테마(Theme)를 HTML 문서 전체에 적용하는 아주 전형적인 패턴입니다. line20~24
+
+- useEffect Hook은 컴포넌트가 렌더링된 후 부수 효과(side effect) 를 실행하기 위한 함수입니다.
+
+```javascript
+useEffect(() => {
+  if (typeof window !== 'undefined') {
+    document.documentElement.dataset.theme = theme
+  }
+}, [theme])
+```
+- if문의 조건절은 “현재 실행 환경이 브라우저인지 확인”하는 부분입니다. line21
+서버 사이드 렌더링(SSR) 단계에서는 window 객체가 없습니다.
+
+- 만약 서버에서 window를 참조하면 오류가 발생합니다. (ReferenceError: window is not defined)
+➔ 따라서 typeof window !== ‘undefined’은 “클라이언트(브라우저) 환경일 때만 실행하라”는 뜻입니다.
+
+💡 TypeScript의 유니온 타입(Union Type)이란?
+- '|'(파이프)로 여러 타입을 연결해서 "이 값은 각각의 타입 중 하나가 될 수 있다"는 것을 지정 합니다.
+- 코드에서 문자열 리터럴 유니온 타입의 경우, state 값으로 'light' 또는 'dark'만 설정할 수 있어 코드 자동완성과 타입 안정성이 향상 됩니다.
+
+### line22는 다음과 같은 의미입니다.
+
+- `document.documentElement`는 HTML 문서의 `<html>` 요소를 가리킵니다.
+- `.dataset.theme = theme` 은 `<html>` 태그에 `data-theme` 속성을 추가하는 코드입니다.
+➔ 만일 theme state 값이 "dark"라면 다음과 같이 HTML을 반환합니다.
+  `<html data-theme="dark">`
+
+### useEffect의 두 번째 인자 [theme] 는 의존성 배열(dependency array) 입니다. line24
+
+- `theme` 값이 변경될 때마다 `useEffect` 안의 코드가 다시 실행됩니다.
+➔ 즉, 테마가 바뀔 때마다 HTML의 `data-theme` 속성도 업데이트됩니다.
+
+### 이 방법을 사용할 경우 CSS에서 속성을 조건으로 스타일을 다르게 지정할 수 있습니다.
+
+```javascript
+useEffect(() => {
+  if (typeof window !== 'undefined') {
+    document.documentElement.dataset.theme = theme
+  }
+}, [theme])
+```
+```javascript
+html[data-theme='light'] {
+  background-color: white;
+  color: black;
+}
+
+html[data-theme='dark'] {
+  background-color: black;
+  color: white;
+}
+```
+
+
 # 11/4 (10주차) 202230137 최원재
 
 ## server에서 client component로 데이터 전달
